@@ -4,13 +4,15 @@ import gym
 from gym import error, spaces
 from gym import utils
 from gym.utils import seeding
-import open_mtg
+from open_mtg import player, deck, game
 
 class MtgEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.players = [player.Player(gold_deck), player.Player(silver_deck)]
+        self.gold_deck = deck.get_8ed_core_gold_deck()
+        self.silver_deck = deck.get_8ed_core_silver_deck()
+        self.players = [player.Player(self.gold_deck), player.Player(self.silver_deck)]
         self.env = game.Game(self.players)
         self.env.start_game()
     
@@ -29,10 +31,10 @@ class MtgEnv(gym.Env):
         player_decklist.sort()
 
         return spaces.Dict({
-            "life", len(player_object.life),
+            "life": len(player_object.life),
             "hand": len(player_object.hand),
             "graveyard": len(player_object.graveyard),
-            "deck": len(players_decklist),
+            "deck": len(player_decklist),
             "battlefield": len(self.env.battlefield),
             "attackers": len(self.env.attackers),
             "blockers": len(self.env.blockers),
@@ -44,7 +46,7 @@ class MtgEnv(gym.Env):
             "current_phase": 1
         })
 
-    def _step(self, action, player):
+    def step(self, action, player):
         """
 
         Parameters
@@ -81,8 +83,8 @@ class MtgEnv(gym.Env):
         episode_over = self.env.is_over()
         return ob, reward, episode_over, {}
 
-    def _reset(self):
-        self.players = [player.Player(gold_deck), player.Player(silver_deck)]
+    def reset(self):
+        self.players = [player.Player(self.gold_deck), player.Player(self.silver_deck)]
         self.env = game.Game(self.players)
         self.env.start_game()
 
@@ -93,7 +95,7 @@ class MtgEnv(gym.Env):
         print(self.env.get_state(1))
 
     def _take_action(self, action, player):
-        if player == current_game.player_with_priority.index:
+        if player == self.env.player_with_priority.index:
             legal_moves = self.env.get_legal_moves(self.env.player_with_priority)
             self.env.make_move(legal_moves[action], False)
 
